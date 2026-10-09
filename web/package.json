@@ -1,0 +1,8 @@
+{
+  "name": "arion-local-upscaler-web",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": { "node": ">=24.0.0" },
+  "scripts": { "start": "node server.mjs", "test": "node --test test/server.test.mjs" }
+}

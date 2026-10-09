@@ -1,0 +1,14 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { stripTypeScriptTypes } from 'node:module';
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const settingsPath = path.join(root, 'apps', 'chaiNNer', 'settings.json');
+const source = fs.readFileSync(path.join(root, 'vendor', 'chaiNNer-0.25.1', 'src', 'common', 'settings', 'settings.ts'), 'utf8').replace(/^import[\s\S]*?;\r?\n/gm, '').replace(/\bexport /g, '');
+const defaults = new Function(stripTypeScriptTypes(source, { mode: 'strip' }) + '\nreturn defaultSettings;')();
+const existing = fs.existsSync(settingsPath) ? JSON.parse(fs.readFileSync(settingsPath, 'utf8').replace(/^\uFEFF/, '')) : {};
+if (fs.existsSync(settingsPath)) fs.copyFileSync(settingsPath, path.join(root, 'docs', `chainner-settings-before-${Date.now()}.json`));
+const settings = { ...defaults, ...existing, useSystemPython: true, systemPythonLocation: path.join(root, '.venv', 'Scripts', 'python.exe') };
+settings.packageSettings = { ...settings.packageSettings, chaiNNer_pytorch: { ...settings.packageSettings?.chaiNNer_pytorch, use_cpu: false, use_fp16: false, gpu_index: '0', budget_limit: 8 } };
+fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 4));
+console.log(`Configured portable chaiNNer to use ${settings.systemPythonLocation}, CUDA FP32.`);

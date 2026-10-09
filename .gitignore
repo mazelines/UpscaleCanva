@@ -1,0 +1,35 @@
+# Local runtimes, downloaded dependencies, models, and user images
+/.cache/
+/.venv/
+/apps/
+/downloads/
+/input/
+/logs/
+/models/
+/output/
+/runtime/
+/vendor/
+/workflows/
+
+# Generated dependency and verification reports
+/docs/*.json
+/docs/requirements-installed.txt
+
+# Personal skill migration files and one-off machine maintenance
+/docs/skill-update/
+/scripts/Apply-ArionSkill.ps1
+/scripts/Finish-Setup.ps1
+/scripts/final_audit.py
+/scripts/stage_skill_update.py
+/scripts/inspect_own_process.py
+
+# Tool caches and local credentials
+node_modules/
+__pycache__/
+*.py[cod]
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db

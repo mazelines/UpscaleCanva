@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>ARION · 원화 업스케일</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/compare.js" defer></script>
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div id="workspace">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="ARION 작업실"><span class="brand-mark">A</span><strong>ARION</strong><span class="brand-divider"></span><span class="brand-sub">Upscale Studio</span></a>
+      <div class="header-actions"><span class="private-pill"><i></i> Tailscale 개인 작업실</span></div>
+    </header>
+    <main>
+      <section class="intro">
+        <div><div class="eyebrow">ARTWORK / FINISHING</div><h1>원화, 한 단계 더 선명하게.</h1><p class="muted">이미지 등록부터 비교 검수까지. 원본을 보존하며 정확히 2배로 확대합니다.</p></div>
+        <div class="hardware"><span class="hardware-icon" aria-hidden="true">▧</span><div><strong>RTX 4090</strong><span>내 PC에서 AI 처리</span></div></div>
+      </section>
+
+      <div class="studio-grid">
+        <section class="panel upload-panel" aria-labelledby="upload-title">
+          <div class="panel-heading"><div><span class="step">01</span><h2 id="upload-title">이미지 등록</h2></div><span class="small-label">PNG · JPG · WEBP</span></div>
+          <div id="drop-zone" class="drop-zone">
+            <div id="paste-target" class="paste-target" contenteditable="true" role="textbox" aria-label="이미지 등록. 클릭하여 파일 선택, 우클릭하여 클립보드 이미지 붙여넣기" aria-describedby="paste-hint" aria-keyshortcuts="Control+V Meta+V" aria-haspopup="menu" aria-controls="upload-menu" aria-expanded="false" aria-multiline="false" spellcheck="false" inputmode="none"></div>
+            <span class="upload-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16 21V6m-6 6 6-6 6 6M6 21v5h20v-5"/></svg></span>
+            <strong>이미지를 이곳에 놓으세요</strong><span>또는 <b>파일 선택</b></span>
+            <span id="paste-hint" class="paste-hint">클립보드 이미지: 우클릭 → 붙여넣기 · Ctrl+V</span>
+            <small>파일당 32MB · 1,600만 픽셀 이하 · 한 번에 8장</small>
+          </div>
+          <input id="file-input" type="file" accept="image/png,image/jpeg,image/webp" multiple class="visually-hidden" aria-label="업스케일할 이미지 파일 선택">
+          <div id="selected-files" class="selected-files"></div>
+          <fieldset class="model-options"><legend>확대 모델</legend>
+            <label class="model-option"><input type="radio" name="model" value="RealESRGAN_x2plus" checked><span class="radio-dot"></span><span><strong>기본 2배 <em>추천</em></strong><small>RealESRGAN_x2plus · AI가 직접 2배 확대</small></span><span class="model-scale">2×</span></label>
+            <label class="model-option"><input type="radio" name="model" value="RealESRGAN_x4plus_anime_6B"><span class="radio-dot"></span><span><strong>애니메이션 선화</strong><small>anime_6B · AI 4배 후 2배로 축소</small></span><span class="model-scale">4→2×</span></label>
+            <label class="model-option"><input type="radio" name="model" value="both"><span class="radio-dot"></span><span><strong>두 모델 비교</strong><small>같은 원본으로 결과 2장을 만듭니다</small></span><span class="model-scale">A / B</span></label>
+          </fieldset>
+          <details class="advanced"><summary>처리 설정 <span>타일 · 메모리</span></summary><div class="advanced-row"><label for="tile">타일 크기</label><select id="tile"><option value="32">32</option><option value="64">64</option><option value="128">128</option><option value="256" selected>256 (기본)</option><option value="512">512</option></select></div><p>메모리가 부족하면 타일을 자동으로 줄여 재시도합니다. 얼굴 복원과 추가 샤프닝은 적용하지 않습니다.</p></details>
+          <button id="submit-job" class="primary upload-submit" disabled><span>AI 2배 확대하기</span><span aria-hidden="true">↗</span></button>
+          <p id="upload-status" class="upload-status" role="status" aria-live="polite"></p>
+          <div class="preserve-note"><span aria-hidden="true">✓</span> 원본 보존 <span aria-hidden="true">·</span> 투명도 / ICC 지원 <span aria-hidden="true">·</span> PNG 저장</div>
+        </section>
+
+        <section class="panel jobs-panel" aria-labelledby="jobs-title">
+          <div class="panel-heading"><div><span class="step">02</span><h2 id="jobs-title">작업 내역</h2></div><button id="refresh" class="text-button">새로고침 ↻</button></div>
+          <div class="queue-summary"><span id="queue-summary">등록한 이미지가 여기에 표시됩니다</span><span class="live-label"><i></i> LIVE</span></div>
+          <div id="jobs-list" class="jobs-list"></div>
+          <div id="empty-state" class="empty-state"><div class="empty-sheets" aria-hidden="true"><span></span><span>2×</span></div><h3>다음 원화를 기다리고 있어요</h3><p>이미지를 등록하면 진행 상태와<br>완성된 결과를 여기에서 확인할 수 있습니다.</p></div>
+          <p class="queue-footnote">GPU 작업은 등록 순서대로 처리합니다. 브라우저를 닫아도 PC가 켜져 있으면 계속 진행됩니다.</p>
+        </section>
+      </div>
+
+      <section id="review" class="panel review-panel" hidden aria-labelledby="review-title">
+        <div class="panel-heading"><div><span class="step">03</span><h2 id="review-title">결과 비교</h2></div><span id="review-name" class="review-name"></span></div>
+        <div class="review-toolbar"><div id="result-tabs" class="result-tabs"></div><div class="review-export"><a id="download" class="primary compact" href="#">PNG 다운로드 ↓</a><button id="copy-result" type="button" class="copy-result" disabled>클립보드 복사</button></div></div>
+        <div class="compare-controls">
+          <div class="compare-zoom-options" role="group" aria-label="비교 보기 배율">
+            <button type="button" data-compare-zoom="1" aria-pressed="true">전체 보기</button>
+            <button type="button" data-compare-zoom="2" aria-pressed="false">2×</button>
+            <button type="button" data-compare-zoom="4" aria-pressed="false">4×</button>
+            <button type="button" data-compare-zoom="8" aria-pressed="false">8×</button>
+          </div>
+          <output id="compare-status" aria-live="polite">전체 보기</output>
+        </div>
+        <p id="compare-help" class="compare-help">자세히 볼 지점에서 <strong>우클릭 → 이 지점 확대 비교</strong>를 선택하세요. 확대 후 드래그하면 양쪽이 함께 이동합니다.</p>
+        <div class="compare-grid">
+          <figure><figcaption><span>원본</span><small id="source-size"></small></figcaption><div id="source-view" class="checker compare-viewport" tabindex="0" role="group" aria-label="원본 이미지 비교" aria-describedby="compare-help" aria-haspopup="menu" aria-controls="compare-menu" aria-expanded="false"><img id="source-image" alt="업로드한 원본 이미지" draggable="false"></div></figure>
+          <figure><figcaption><span>AI 업스케일 <b>2×</b></span><small id="result-size"></small></figcaption><div id="result-view" class="checker compare-viewport" tabindex="0" role="group" aria-label="AI 확대 결과 비교" aria-describedby="compare-help" aria-haspopup="menu" aria-controls="compare-menu" aria-expanded="false"><img id="result-image" alt="AI 2배 확대 결과" draggable="false"></div></figure>
+        </div>
+        <div id="result-facts" class="result-facts"></div>
+        <p class="review-note">원본 해상도의 이미지를 같은 영역과 표시 크기로 비교합니다. 보기 배율은 전체 보기 기준이며, 다운로드 파일의 해상도는 바뀌지 않습니다.</p>
+      </section>
+      <footer><span>ARION <b>×</b> Real-ESRGAN</span><span>당신의 원화는 이 PC에서 처리됩니다.</span></footer>
+    </main>
+    <div id="toast" class="toast" role="alert" hidden></div>
+    <div id="upload-menu" class="compare-menu upload-menu" role="menu" aria-label="이미지 등록" hidden>
+      <button id="upload-paste" type="button" role="menuitem">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 4H5a1 1 0 0 0-1 1v12h12V5a1 1 0 0 0-1-1h-2M7 3h6v3H7zM7 10h6M7 13h4"/></svg>
+        클립보드 이미지 붙여넣기 <span id="paste-shortcut">Ctrl+V</span>
+      </button>
+    </div>
+    <div id="compare-menu" class="compare-menu" role="menu" aria-label="이미지 비교" hidden>
+      <button id="compare-zoom-here" type="button" role="menuitem">이 지점 확대 비교 <span>4×</span></button>
+      <button id="compare-fit" type="button" role="menuitem">전체 보기로 돌아가기</button>
+      <button id="compare-copy" type="button" role="menuitem" disabled>결과 이미지 클립보드 복사</button>
+    </div>
+  </div>
+</body>
+</html>
