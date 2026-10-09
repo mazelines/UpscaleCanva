@@ -30,7 +30,7 @@ for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
             throw ('Waiting for configured network addresses: {0}' -f ($missing -join ', '))
         }
         Write-StartupLog "Attempt $attempt of $MaxAttempts."
-        & (Join-Path $PSScriptRoot 'Start-Web.ps1') -NodePath $NodePath *>&1 |
+        & (Join-Path $PSScriptRoot 'Start-Web.ps1') -NodePath $NodePath -NoBrowser *>&1 |
             Out-File -FilePath $logPath -Append -Encoding utf8
         foreach ($address in $config.hosts) {
             $url = 'http://{0}:{1}' -f $address, $config.port

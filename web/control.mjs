@@ -30,7 +30,7 @@ if (command === 'start' && await running()) {
   }
   if (!ready) throw new Error('Web server did not start. See logs/web-server.log.');
   console.log(`ARION web: ${config.hosts.map(h => `http://${h}:${config.port}`).join(' | ')}`);
-  console.log('Open the URL directly. No login is required inside your private Tailscale network.');
+  console.log('Local app is ready. No application login is required.');
 } else if (command === 'stop' && !await running()) {
   console.log('ARION web server is not running.');
 } else if (command === 'stop') {

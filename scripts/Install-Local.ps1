@@ -1,43 +1,99 @@
 [CmdletBinding()]
-param()
+param([switch]$Repair)
 $ErrorActionPreference = 'Stop'
-$projectRoot = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'Setup-Helpers.ps1')
+$projectRoot = $script:SetupRoot
 Set-Location -LiteralPath $projectRoot
-New-Item -ItemType Directory -Force -Path models,input,output,workflows,scripts,downloads,docs,logs,runtime | Out-Null
-$env:UV_PYTHON_INSTALL_DIR = Join-Path $projectRoot 'runtime\python'
-$env:UV_CACHE_DIR = Join-Path $projectRoot '.cache\uv'
-$env:PIP_CACHE_DIR = Join-Path $projectRoot '.cache\pip'
-function Get-Artifact([string]$Url, [string]$RelativePath, [string]$ExpectedSha256 = '') {
-    $target = Join-Path $projectRoot $RelativePath
-    if (-not (Test-Path -LiteralPath $target)) {
-        & curl.exe --fail --location --retry 3 --output "$target.partial" $Url
-        if ($LASTEXITCODE -ne 0) { throw "Download failed: $Url" }
-        Move-Item -LiteralPath "$target.partial" -Destination $target
+if (-not [Environment]::Is64BitProcess -or $env:PROCESSOR_ARCHITECTURE -eq 'ARM64') {
+    throw 'UpscaleCanva requires Windows x64 and 64-bit PowerShell.'
+}
+if ($projectRoot.StartsWith('\\')) { throw 'Extract the project to a local writable folder, then run Setup.cmd.' }
+foreach ($folder in @('models','input','output','workflows','downloads','docs','logs','runtime','runtime/temp')) {
+    New-Item -ItemType Directory -Force -Path (Get-SetupPath $folder) | Out-Null
+}
+Set-ProjectEnvironment
+$lock = $null
+$transcribing = $false
+try {
+    try { $lock = [IO.File]::Open((Get-SetupPath 'runtime/setup.lock'), 'OpenOrCreate', 'ReadWrite', 'None') }
+    catch { throw 'Another setup is running for this project. Wait for that window to finish, then try again.' }
+    Start-Transcript -Path (Get-SetupPath 'logs/setup.log') -Append | Out-Null
+    $transcribing = $true
+    Write-Host 'UpscaleCanva development environment'
+    Write-Host 'First setup downloads several GB. Keep this window open; rerun to resume after a failure.'
+    if (-not (Test-Path -LiteralPath (Join-Path $env:SystemRoot 'System32/nvcuda.dll'))) {
+        throw 'NVIDIA CUDA driver not found. Install the NVIDIA graphics driver for your GPU, restart Windows, then retry. A separate CUDA Toolkit is not needed.'
     }
-    $hash = (Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash.ToLowerInvariant()
-    if ($ExpectedSha256 -and $hash -ne $ExpectedSha256) { throw "SHA256 mismatch: $target" }
-    [PSCustomObject]@{url=$Url;path=$RelativePath;sha256=$hash;bytes=(Get-Item -LiteralPath $target).Length}
+    $manifest = Get-Content -LiteralPath (Get-SetupPath 'scripts/runtime-manifest.json') -Raw | ConvertFrom-Json
+    Write-Host '[1/6] Preparing project-local Git, Node.js and uv...'
+    foreach ($artifact in $manifest.tools) { Install-SetupArchive $artifact }
+    $node = Get-SetupPath 'runtime/node/node.exe'
+    $uv = Get-SetupPath 'runtime/uv/uv.exe'
+    Invoke-SetupCommand $node @('--version') 'Node.js validation'
+    Invoke-SetupCommand $uv @('--version') 'uv validation'
+    Invoke-SetupCommand (Get-SetupPath 'runtime/git/cmd/git.exe') @('--version') 'Git validation'
+    Install-VisualCppRuntime
+    $python = Get-SetupPath '.venv/Scripts/python.exe'
+    $pythonReady = $false
+    if (Test-Path -LiteralPath $python) {
+        try {
+            $details = @(& $python -c 'import sys; print(sys.version.split()[0]); print(sys.base_prefix)' 2>$null)
+            $pythonReady = $LASTEXITCODE -eq 0 -and $details.Count -eq 2 -and $details[0] -eq $manifest.python -and
+                $details[1].StartsWith((Get-SetupPath 'runtime/python') + '\', [StringComparison]::OrdinalIgnoreCase)
+        } catch { $pythonReady = $false }
+    }
+    $statePath = Get-SetupPath 'runtime/setup-complete.json'
+    $fingerprint = Get-SetupFingerprint
+    $state = $null
+    if (Test-Path -LiteralPath $statePath) {
+        try { $state = Get-Content -LiteralPath $statePath -Raw -Encoding UTF8 | ConvertFrom-Json } catch { $state = $null }
+    }
+    $modelsReady = $true
+    foreach ($model in $manifest.models) {
+        $file = Get-SetupPath $model.file
+        if (-not (Test-Path -LiteralPath $file) -or (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash -ne $model.sha256) { $modelsReady = $false }
+    }
+    $guiReady = (Test-Path -LiteralPath (Get-SetupPath 'apps/chaiNNer/chaiNNer.exe')) -and
+        (Test-Path -LiteralPath (Get-SetupPath 'vendor/chaiNNer-0.25.1/src/main/SaveFile.ts')) -and
+        (Test-Path -LiteralPath (Get-SetupPath 'docs/chainner-schema.json')) -and
+        (Test-Path -LiteralPath (Get-SetupPath 'apps/chaiNNer/settings.json'))
+    if (-not $Repair -and $pythonReady -and $modelsReady -and $guiReady -and $state -and
+        $state.root -eq $projectRoot -and $state.fingerprint -eq $fingerprint) {
+        try {
+            Invoke-SetupCommand $python @('-X','utf8',(Get-SetupPath 'scripts/diagnostics.py'),'--quiet') 'Environment validation'
+            Write-Host 'Environment is ready. Reusing the installed runtime; no downloads needed.'
+            return
+        } catch { Write-Host "Existing environment needs repair: $($_.Exception.Message)" }
+    }
+    $drive = New-Object IO.DriveInfo ([IO.Path]::GetPathRoot($projectRoot))
+    if ($drive.AvailableFreeSpace -lt 12GB) { throw 'At least 12 GB of free disk space is required for setup and downloads.' }
+    Write-Host '[2/6] Preparing Python 3.10 and the virtual environment...'
+    if (-not $pythonReady) {
+        if (Test-Path -LiteralPath (Get-SetupPath '.venv')) { Move-SetupBackup '.venv' }
+        Invoke-SetupCommand $uv @('python','install',$manifest.python,'--no-bin','--no-registry') 'Python download'
+        Invoke-SetupCommand $uv @('venv','--python',$manifest.python,'--managed-python','--seed',(Get-SetupPath '.venv')) 'Virtual environment creation'
+    }
+    Write-Host '[3/6] Installing CUDA PyTorch and image processing packages...'
+    Invoke-SetupCommand $uv @('pip','install','--python',$python,'-r',(Get-SetupPath 'requirements-torch.txt')) 'CUDA PyTorch installation'
+    Invoke-SetupCommand $uv @('pip','install','--python',$python,'-r',(Get-SetupPath 'requirements.txt')) 'Image processing dependencies'
+    Write-Host '[4/6] Preparing models and chaiNNer...'
+    foreach ($model in $manifest.models) { Get-VerifiedDownload $model.url $model.file $model.sha256 | Out-Null }
+    foreach ($artifact in $manifest.gui) { Install-SetupArchive $artifact -ReuseExisting }
+    Write-Host '[5/6] Installing chaiNNer dependencies and configuring workflows...'
+    & (Join-Path $PSScriptRoot 'Install-ChaiNNerDeps.ps1') -UvPath $uv
+    Invoke-SetupCommand $python @('-X','utf8',(Get-SetupPath 'scripts/export_chainner_schema.py')) 'chaiNNer node registry'
+    Invoke-SetupCommand $node @((Get-SetupPath 'scripts/configure_chainner.mjs')) 'chaiNNer configuration'
+    Write-Host '[6/6] Checking dependencies and running a CUDA operation...'
+    Invoke-SetupCommand $uv @('pip','check','--python',$python) 'Python dependency check'
+    Invoke-SetupCommand $python @('-X','utf8',(Get-SetupPath 'scripts/diagnostics.py')) 'CUDA validation'
+    $record = @{ root = $projectRoot; fingerprint = $fingerprint; completedAt = (Get-Date).ToUniversalTime().ToString('o') }
+    [IO.File]::WriteAllText("$statePath.partial", ($record | ConvertTo-Json), (New-Object Text.UTF8Encoding($false)))
+    Move-Item -LiteralPath "$statePath.partial" -Destination $statePath -Force
+    Write-Host 'Setup complete. Use Start-Web.cmd to open the app or Dev-Shell.cmd to develop.'
+} catch {
+    Write-Host "SETUP FAILED: $($_.Exception.Message)" -ForegroundColor Red
+    throw
+} finally {
+    if ($transcribing) { Stop-Transcript | Out-Null }
+    if ($lock) { $lock.Dispose() }
 }
-$artifacts = @()
-$artifacts += Get-Artifact 'https://github.com/chaiNNer-org/chaiNNer/releases/download/v0.25.1/chaiNNer-windows-x64-0.25.1-portable.zip' 'downloads\chaiNNer-windows-x64-0.25.1-portable.zip' 'ab06e3a8cf036ff76440fc162539b2c4c62abee99dd452ce0bf9c313d63450ed'
-$artifacts += Get-Artifact 'https://github.com/chaiNNer-org/chaiNNer/archive/refs/tags/v0.25.1.zip' 'downloads\chaiNNer-v0.25.1-source.zip'
-$artifacts += Get-Artifact 'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth' 'models\RealESRGAN_x2plus.pth' '49fafd45f8fd7aa8d31ab2a22d14d91b536c34494a5cfe31eb5d89c2fa266abb'
-$artifacts += Get-Artifact 'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth' 'models\RealESRGAN_x4plus_anime_6B.pth' 'f872d837d3c90ed2e05227bed711af5671a6fd1c9f7d7e91c911a61f155e99da'
-$artifacts | ConvertTo-Json -Depth 5 | Set-Content -Encoding UTF8 -LiteralPath (Join-Path $projectRoot 'docs\artifacts.json')
-if (-not (Test-Path -LiteralPath 'apps\chaiNNer')) { Expand-Archive -LiteralPath 'downloads\chaiNNer-windows-x64-0.25.1-portable.zip' -DestinationPath 'apps\chaiNNer' }
-if (-not (Test-Path -LiteralPath 'vendor\chaiNNer-0.25.1')) { Expand-Archive -LiteralPath 'downloads\chaiNNer-v0.25.1-source.zip' -DestinationPath 'vendor' }
-if (-not (Test-Path -LiteralPath '.venv\Scripts\python.exe')) {
-    & uv venv --python 3.10.20 --seed .venv
-    if ($LASTEXITCODE -ne 0) { throw 'Python environment creation failed' }
-}
-& uv pip install --python '.venv\Scripts\python.exe' 'torch==2.7.0+cu128' 'torchvision==0.22.0+cu128' --index-url 'https://download.pytorch.org/whl/cu128'
-if ($LASTEXITCODE -ne 0) { throw 'CUDA PyTorch installation failed' }
-& uv pip install --python '.venv\Scripts\python.exe' 'spandrel==0.4.1' 'numpy==1.24.4' 'Pillow==9.2.0' 'PyYAML==6.0.3'
-if ($LASTEXITCODE -ne 0) { throw 'Inference dependencies installation failed' }
-& '.venv\Scripts\python.exe' -X utf8 -c 'import torch; print(torch.__version__, torch.version.cuda, torch.cuda.is_available()); assert torch.cuda.is_available(); print(torch.cuda.get_device_name(0))'
-if ($LASTEXITCODE -ne 0) { throw 'CUDA validation failed' }
-& (Join-Path $PSScriptRoot 'Install-ChaiNNerDeps.ps1')
-& '.venv\Scripts\python.exe' -X utf8 (Join-Path $PSScriptRoot 'export_chainner_schema.py')
-if ($LASTEXITCODE -ne 0) { throw 'chaiNNer node schema validation failed' }
-& node (Join-Path $PSScriptRoot 'configure_chainner.mjs')
-if ($LASTEXITCODE -ne 0) { throw 'chaiNNer configuration failed' }

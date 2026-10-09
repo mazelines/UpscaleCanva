@@ -19,7 +19,8 @@ $env:TMP = $env:TEMP
 New-Item -ItemType Directory -Force -Path $env:TEMP | Out-Null
 $session = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
 $workflow = Join-Path $projectRoot "workflows\sessions\ARION-compare-2x-$session.chn"
-& node (Join-Path $PSScriptRoot 'build_workflow.mjs') $inputFile "$TileSize" $workflow
+. (Join-Path $PSScriptRoot 'Setup-Helpers.ps1')
+& (Get-ProjectNode) (Join-Path $PSScriptRoot 'build_workflow.mjs') $inputFile "$TileSize" $workflow
 if ($LASTEXITCODE -ne 0) { throw 'Workflow generation failed' }
 $guiExe = Join-Path $projectRoot 'apps\chaiNNer\chaiNNer.exe'
 # This is the interactive GUI requested by the user, so show its window.

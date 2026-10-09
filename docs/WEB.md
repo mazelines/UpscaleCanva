@@ -1,6 +1,6 @@
 # 웹 사용 안내
 
-최초 설치를 마친 뒤 프로젝트 루트의 `Start-Web.cmd`를 더블클릭하세요. 기본 접속 주소는 **http://127.0.0.1:7860** 입니다. 웹 화면 이름은 ARION Upscale Studio이며, 이미지 처리는 서버를 실행한 PC의 NVIDIA GPU에서 수행합니다.
+프로젝트 루트의 `Start-Web.cmd`를 더블클릭하세요. 첫 실행에는 Git·Node.js·uv·Python·CUDA PyTorch·chaiNNer·모델을 자동 설치하고, 서버 준비 후 브라우저를 엽니다. 기본 접속 주소는 **http://127.0.0.1:7860** 입니다. 웹 화면 이름은 ARION Upscale Studio이며, 이미지 처리는 서버를 실행한 PC의 NVIDIA GPU에서 수행합니다.
 
 ## 사용 방법
 
@@ -19,14 +19,20 @@ GPU 작업은 하나씩 처리하며 실행 중인 작업을 포함해 최대 8�
 프로젝트 루트에서 실행합니다.
 
 ```powershell
-.\Start-Web.cmd                      # CUDA 확인 후 백그라운드 시작
+.\Start-Web.cmd                      # 자동 설치·CUDA 확인·서버 시작·브라우저 열기
 .\Start-Web.cmd --no-pause           # 호출 후 키 입력을 기다리지 않음
+.\Start-Web.cmd --no-browser --no-pause  # 브라우저와 입력 대기 없이 실행
+.\Setup.cmd                         # 개발 환경만 자동 설치
+.\Dev-Shell.cmd                     # 프로젝트 도구가 설정된 개발용 터미널
+.\Stop-Web.cmd                      # 서버 종료
 .\scripts\Start-Web.ps1 -Foreground  # 현재 터미널에서 서버 로그 확인
 .\scripts\Show-WebAccess.ps1         # 설정된 접속 주소 확인
 .\scripts\Stop-Web.ps1               # 신규 요청 중지, 진행 중 GPU 작업은 마저 처리
 ```
 
-백그라운드 시작에 성공하면 CMD 창을 닫아도 서버는 계속 동작합니다. 시작에 실패하면 표시된 오류와 `logs/web-server.log`를 확인하세요. 현재 설치에서는 Node.js가 PATH에 있어야 하고 프로젝트 `.venv`와 chaiNNer 구성이 필요합니다.
+백그라운드 시작에 성공하면 CMD 창을 닫아도 서버는 계속 동작합니다. 설치 실패는 `logs/setup.log`, 서버 시작 실패는 `logs/web-server.log`를 확인하세요. 다시 실행하면 검증된 파일을 재사용하고 누락된 환경을 준비합니다. Git·Node.js·Python을 따로 설치하거나 전역 PATH를 편집할 필요가 없습니다.
+
+첫 설치에는 인터넷, 최소 12GB의 여유 공간, 호환 NVIDIA GPU와 드라이버가 필요합니다. 누락된 Microsoft Visual C++ 런타임 설치에는 Windows 관리자 승인이 필요할 수 있습니다. 모델·실행 파일 다운로드는 SHA256을 검사하고, Microsoft 설치 프로그램은 서명을 확인합니다.
 
 ## 로컬 설정과 Tailscale
 
@@ -72,5 +78,8 @@ Unregister-ScheduledTask -TaskName 'ARION Upscaler Web' -Confirm:$false
 | `runtime/web/config.json` | PC별 수신 주소와 포트 |
 | `logs/web-server.log` | 서버 시작 및 오류 기록 |
 | `logs/web-startup.log` | 부팅 자동 실행 기록 |
+| `logs/setup.log` | 개발 환경 설치와 검증 기록 |
+| `runtime/setup-complete.json` | 검증에 성공한 설치 구성 |
+| `runtime/backups/` | 복구 시 보존한 이전 환경 |
 
 위 경로의 데이터는 Git에 포함되지 않습니다. 저장소를 업데이트해도 개인 작업 파일과 로컬 설정은 유지됩니다.

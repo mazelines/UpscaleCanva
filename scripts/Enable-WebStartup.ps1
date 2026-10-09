@@ -3,7 +3,8 @@ param()
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$nodePath = (Get-Command node.exe -CommandType Application -ErrorAction Stop).Source
+. (Join-Path $PSScriptRoot 'Setup-Helpers.ps1')
+$nodePath = Get-ProjectNode
 $powerShellPath = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
 $startupScript = Join-Path $PSScriptRoot 'Start-WebAtBoot.ps1'
 $userName = [Security.Principal.WindowsIdentity]::GetCurrent().Name
