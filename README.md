@@ -1,8 +1,8 @@
 # UpscaleCanva
 
-![ARION Upscale Studio — 리파인 + 업스케일러](docs/assets/arion-refine-upscaler-banner.png)
+![UpscaleCanva — 리파인 + 업스케일러](docs/assets/upscalecanva-refine-upscaler-banner.png)
 
-Windows에서 실행하는 로컬 AI 이미지 업스케일 도구입니다. 현재 웹 화면 이름은 **ARION Upscale Studio**이며, Real-ESRGAN 모델을 사용해 원본의 가로·세로를 각각 2배로 확대합니다.
+**UpscaleCanva**는 메이즈라인의 Windows용 로컬 AI 이미지 업스케일 도구입니다. Real-ESRGAN 모델을 사용해 원본의 가로·세로를 각각 2배로 확대합니다.
 
 **압축을 풀고 `Start-Web.cmd`를 더블클릭하면 개발 환경 설치부터 웹 화면 열기까지 자동으로 진행합니다.** 필요한 실행 파일과 모델은 첫 실행 때 내려받아 프로젝트 폴더에 설치합니다.
 

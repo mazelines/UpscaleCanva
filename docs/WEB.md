@@ -1,6 +1,6 @@
 # 웹 사용 안내
 
-프로젝트 루트의 `Start-Web.cmd`를 더블클릭하세요. 첫 실행에는 Git·Node.js·uv·Python·CUDA PyTorch·chaiNNer·모델을 자동 설치하고, 서버 준비 후 브라우저를 엽니다. 기본 접속 주소는 **http://127.0.0.1:7860** 입니다. 웹 화면 이름은 ARION Upscale Studio이며, 이미지 처리는 서버를 실행한 PC의 NVIDIA GPU에서 수행합니다.
+프로젝트 루트의 `Start-Web.cmd`를 더블클릭하세요. 첫 실행에는 Git·Node.js·uv·Python·CUDA PyTorch·chaiNNer·모델을 자동 설치하고, 서버 준비 후 브라우저를 엽니다. 기본 접속 주소는 **http://127.0.0.1:7860** 입니다. 제품 이름은 **UpscaleCanva**이며, 이미지 처리는 서버를 실행한 PC의 NVIDIA GPU에서 수행합니다.
 
 ## 사용 방법
 
@@ -57,15 +57,15 @@ GPU 작업은 하나씩 처리하며 실행 중인 작업을 포함해 최대 8�
 
 ```powershell
 .\scripts\Enable-WebStartup.ps1
-Get-ScheduledTaskInfo -TaskName 'ARION Upscaler Web'
+Get-ScheduledTaskInfo -TaskName 'UpscaleCanva Web'
 ```
 
-작업은 부팅 후 30초 뒤 시작하고, 설정된 네트워크 주소와 CUDA 준비가 늦으면 재시도합니다. 암호를 저장하지 않는 S4U 로그온을 사용하며 등록 당시의 프로젝트·Node.js 경로를 참조합니다. 설치 폴더나 Node.js 위치를 옮긴 경우 등록을 갱신해야 합니다. 시작 기록은 `logs/web-startup.log`에 저장합니다.
+작업은 부팅 후 30초 뒤 시작하고, 설정된 네트워크 주소와 CUDA 준비가 늦으면 재시도합니다. 암호를 저장하지 않는 S4U 로그온을 사용하며 등록 당시의 프로젝트·Node.js 경로를 참조합니다. 설치 폴더나 Node.js 위치를 옮긴 경우 등록을 갱신해야 합니다. 이전 이름으로 등록한 자동 시작 작업도 위 등록 명령을 다시 실행하면 새 이름으로 전환됩니다. 시작 기록은 `logs/web-startup.log`에 저장합니다.
 
 자동 실행 해제는 관리자 PowerShell에서 수행합니다. 현재 실행 중인 서버는 별도로 종료해야 합니다.
 
 ```powershell
-Unregister-ScheduledTask -TaskName 'ARION Upscaler Web' -Confirm:$false
+Unregister-ScheduledTask -TaskName 'UpscaleCanva Web' -Confirm:$false
 ```
 
 ## 데이터 저장 위치

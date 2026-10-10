@@ -29,10 +29,10 @@ if (command === 'start' && await running()) {
     if (await running()) { ready = true; break; }
   }
   if (!ready) throw new Error('Web server did not start. See logs/web-server.log.');
-  console.log(`ARION web: ${config.hosts.map(h => `http://${h}:${config.port}`).join(' | ')}`);
+  console.log(`UpscaleCanva web: ${config.hosts.map(h => `http://${h}:${config.port}`).join(' | ')}`);
   console.log('Local app is ready. No application login is required.');
 } else if (command === 'stop' && !await running()) {
-  console.log('ARION web server is not running.');
+  console.log('UpscaleCanva web server is not running.');
 } else if (command === 'stop') {
   const stopped = await fetch(`${localURL}/api/local-stop`, { method: 'POST', headers: { 'X-Arion-Request': '1' } });
   if (!stopped.ok) throw new Error('Server could not stop.');

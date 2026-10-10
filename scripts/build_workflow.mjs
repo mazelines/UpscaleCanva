@@ -75,7 +75,7 @@ const content = { nodes, edges, viewport: { x: 50, y: 160, zoom: 0.48 } };
 const serialized = SaveFile.stringify(content, '0.25.1');
 const raw = JSON.parse(serialized);
 if (createHash('md5').update(JSON.stringify(raw.content)).digest('hex') !== raw.checksum) throw new Error('Serializer checksum verification failed');
-const workflow = process.argv[4] ? path.resolve(process.argv[4]) : path.join(root, 'workflows', 'ARION-compare-2x.chn');
+const workflow = process.argv[4] ? path.resolve(process.argv[4]) : path.join(root, 'workflows', 'UpscaleCanva-compare-2x.chn');
 fs.mkdirSync(path.dirname(workflow), { recursive: true });
 fs.writeFileSync(workflow, serialized);
 const manifest = { workflow, input, sessionDir, nativeSerializer: 'vendor/chaiNNer-0.25.1/src/main/SaveFile.ts', migration: currentMigration, nodes: nodes.length, edges: edges.length, requiredSchemas: [...new Set(nodes.map(n => n.data.schemaId))], tile, saves, generatedUtc: new Date().toISOString(), nativeAppValidation: 'pending' };

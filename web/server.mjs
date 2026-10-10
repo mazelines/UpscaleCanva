@@ -164,13 +164,14 @@ export async function createApp(options = {}) {
     const stat = await fs.stat(filename);
     if (downloadName) {
       const encoded = encodeURIComponent(downloadName).replace(/['()*]/g, c => `%${c.charCodeAt(0).toString(16)}`);
-      res.setHeader('Content-Disposition', `attachment; filename="arion-result.png"; filename*=UTF-8''${encoded}`);
+      res.setHeader('Content-Disposition', `attachment; filename="upscalecanva-result.png"; filename*=UTF-8''${encoded}`);
     }
     res.writeHead(200, { 'Content-Type': type, 'Content-Length': stat.size });
     const stream = createReadStream(filename);
     stream.on('error', () => res.destroy()); res.on('close', () => stream.destroy()); stream.pipe(res);
   }
   async function handle(req, res) {
+    // Keep protocol identifiers compatible with installed launchers and open browser tabs.
     res.setHeader('X-Arion-Service', 'upscaler-v1');
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -300,7 +301,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const app = await createApp();
   const urls = await app.listen();
   await atomicJSON(path.join(ROOT, 'runtime', 'web', 'server.json'), { pid: process.pid, startedAt: now(), urls });
-  console.log(`ARION web ready: ${urls.join(' | ')}`);
+  console.log(`UpscaleCanva web ready: ${urls.join(' | ')}`);
   console.log('Private Tailscale access; no application login.');
   for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, async () => {
     console.log('Stopping web listener. Current GPU job will finish; queued jobs resume as interrupted.');

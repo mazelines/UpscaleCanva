@@ -18,7 +18,7 @@ $env:TEMP = Join-Path $projectRoot 'runtime\temp'
 $env:TMP = $env:TEMP
 New-Item -ItemType Directory -Force -Path $env:TEMP | Out-Null
 $session = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
-$workflow = Join-Path $projectRoot "workflows\sessions\ARION-compare-2x-$session.chn"
+$workflow = Join-Path $projectRoot "workflows\sessions\UpscaleCanva-compare-2x-$session.chn"
 . (Join-Path $PSScriptRoot 'Setup-Helpers.ps1')
 & (Get-ProjectNode) (Join-Path $PSScriptRoot 'build_workflow.mjs') $inputFile "$TileSize" $workflow
 if ($LASTEXITCODE -ne 0) { throw 'Workflow generation failed' }
