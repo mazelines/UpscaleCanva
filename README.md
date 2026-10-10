@@ -17,6 +17,20 @@
 
 `RealESRGAN_x2plus`는 AI가 직접 2배 출력합니다. `RealESRGAN_x4plus_anime_6B`는 AI 4배 출력 후 Lanczos로 원본 대비 2배 크기로 축소합니다. 얼굴 복원과 추가 샤프닝은 적용하지 않습니다.
 
+## 화면 미리보기
+
+### 이미지 등록과 작업 내역
+
+이미지를 등록하고 확대 모델을 선택한 뒤, 작업 내역에서 처리 상태와 완료된 결과를 확인할 수 있습니다.
+
+![UpscaleCanva 이미지 등록과 작업 내역](docs/assets/upscalecanva-workspace.png)
+
+### 원본과 확대 결과 비교
+
+원본과 AI 확대 결과를 같은 영역에서 나란히 비교할 수 있습니다. 확대와 이동이 양쪽에 연동되며, 결과를 PNG로 다운로드하거나 클립보드에 복사할 수 있습니다. 화면의 2×·4×·8×는 비교 보기 배율이고, 저장되는 결과는 항상 원본 대비 가로·세로 각각 2배입니다.
+
+![UpscaleCanva 원본과 AI 2배 확대 결과 비교](docs/assets/upscalecanva-result-comparison.png)
+
 ## 원클릭 설치와 실행
 
 현재 지원 대상은 Windows x64와 CUDA 호환 NVIDIA GPU입니다. CPU 실행, AMD/Intel GPU 및 macOS는 지원하지 않습니다. 아래 버전 조합은 기존 RTX 4090 환경에서 검증했으며 다른 GPU에서의 호환성 검증은 별도로 필요합니다.
